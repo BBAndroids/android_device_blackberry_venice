@@ -1,0 +1,6 @@
+[
+  {
+    "repository": "android_kernel_blackberry_msm8992",
+    "target_path": "kernel/blackberry/msm8992"
+  }
+]

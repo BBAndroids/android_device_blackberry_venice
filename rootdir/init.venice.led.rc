@@ -1,0 +1,32 @@
+on post-fs-data
+    chown system system /sys/class/leds/led:rgb_red/brightness
+    chown system system /sys/class/leds/led:rgb_green/brightness
+    chown system system /sys/class/leds/led:rgb_blue/brightness
+    chown system system /sys/class/leds/led:rgb_red/blink
+    chown system system /sys/class/leds/led:rgb_green/blink
+    chown system system /sys/class/leds/led:rgb_blue/blink
+    chown system system /sys/class/leds/led:rgb_red/duty_pcts
+    chown system system /sys/class/leds/led:rgb_green/duty_pcts
+    chown system system /sys/class/leds/led:rgb_blue/duty_pcts
+    chown system system /sys/class/leds/led:rgb_red/ramp_step_ms
+    chown system system /sys/class/leds/led:rgb_green/ramp_step_ms
+    chown system system /sys/class/leds/led:rgb_blue/ramp_step_ms
+    chown system system /sys/class/leds/led:rgb_red/start_idx
+    chown system system /sys/class/leds/led:rgb_green/start_idx
+    chown system system /sys/class/leds/led:rgb_blue/start_idx
+    chown system system /sys/class/leds/led:rgb_red/lut_flags
+    chown system system /sys/class/leds/led:rgb_green/lut_flags
+    chown system system /sys/class/leds/led:rgb_blue/lut_flags
+    chown system system /sys/class/leds/led:rgb_red/pause_hi
+    chown system system /sys/class/leds/led:rgb_green/pause_hi
+    chown system system /sys/class/leds/led:rgb_blue/pause_hi
+    chown system system /sys/class/leds/led:rgb_red/pause_lo
+    chown system system /sys/class/leds/led:rgb_green/pause_lo
+    chown system system /sys/class/leds/led:rgb_blue/pause_lo
+    chmod 0664 /sys/class/leds/led:rgb_red/brightness
+    chmod 0664 /sys/class/leds/led:rgb_green/brightness
+    chmod 0664 /sys/class/leds/led:rgb_blue/brightness
+    chown system system /sys/class/leds/kpd-backlight/brightness
+    chmod 0664 /sys/class/leds/kpd-backlight/brightness
+    chown system system /sys/devices/soc.0/f9923000.i2c/i2c-1/1-0020/input/input1/info
+    chmod 0664 /sys/devices/soc.0/f9923000.i2c/i2c-1/1-0020/input/input1/info

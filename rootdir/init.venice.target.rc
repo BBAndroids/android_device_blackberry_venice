@@ -1,0 +1,85 @@
+# Copyright (c) 2009-2012, The Linux Foundation. All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#     * Redistributions of source code must retain the above copyright
+#       notice, this list of conditions and the following disclaimer.
+#     * Redistributions in binary form must reproduce the above copyright
+#       notice, this list of conditions and the following disclaimer in the
+#       documentation and/or other materials provided with the distribution.
+#     * Neither the name of The Linux Foundation nor
+#       the names of its contributors may be used to endorse or promote
+#       products derived from this software without specific prior written
+#       permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NON-INFRINGEMENT ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+# OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+# OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+# ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+
+import /vendor/etc/init/hw/init.venice.led.rc
+import /vendor/etc/init/hw/init.venice.poweroff_charging.rc
+import /vendor/etc/init/hw/init.venice.usb.rc
+
+on post-fs
+#sensor-i2c, device name will change from /dev/i2c-5 to /dev/sensor-i2c
+    chown system system /dev/i2c-5
+    chown system system /dev/i2c-7
+#sensor-interrupts and gpios
+    chown system system /sys/class/sensors/m4_hub/device/hub_boot0/value
+    chown system system /sys/class/sensors/m4_hub/device/hub_boot1/value
+    chown system system /sys/class/sensors/m4_hub/device/hub_rst/value
+    chown system system /sys/class/sensors/m4_hub/device/msm_int/value
+    chown system system /sys/class/sensors/m4_hub/device/interrupt/edge
+    chown system system /sys/class/sensors/m4_hub/device/interrupt/active_low
+    chown system system /sys/class/sensors/vl6180/device/reset/value
+    chown system system /sys/class/sensors/vl6180/device/interrupt/edge
+    chown system system /sys/class/sensors/vl6180/device/interrupt/active_low
+
+on boot
+    # execute script to set initial CPU settings
+    # don't run as a service to avoid race conditions
+    exec - root root system -- /vendor/bin/init.venice.power.sh
+
+    # add a cpuset for the camera daemon
+    # we want all the little cores for camera
+    mkdir /dev/cpuset/camera-daemon
+    write /dev/cpuset/camera-daemon/cpus 0-3
+    write /dev/cpuset/camera-daemon/mems 0
+    chown system system /dev/cpuset/camera-daemon
+    chown system system /dev/cpuset/camera-daemon/tasks
+    chmod 0664 /dev/cpuset/camera-daemon/tasks
+
+    # update cpusets now that processors are up
+    # foreground gets all CPUs except CPU 3
+    # background gets all little CPUs except CPU 3
+    # CPU 3 is reserved for the top app and camera
+    write /dev/cpuset/background/cpus 0-2
+    write /dev/cpuset/foreground/cpus 0-2,4-5
+    write /dev/cpuset/system-background/cpus 0-2
+    write /dev/cpuset/top-app/cpus 0-5
+    write /dev/cpuset/restricted/cpus 0-3
+
+    # adaptive LMK
+    write /sys/module/lowmemorykiller/parameters/enable_adaptive_lmk 1
+    write /sys/module/lowmemorykiller/parameters/vmpressure_file_min 81250
+
+    # Wifi firmware reload path
+    chown wifi wifi /sys/module/bcmdhd/parameters/firmware_path
+
+    # Use the group Wi-Fi Direct interface on bcm43xx
+    setprop wifi.direct.interface p2p-dev-wlan0
+    
+    exec chown -R radio:radio /persist/cellular
+
+service vtnvfsd /vendor/bin/vtnvfsd -b /dev/block/bootdevice/by-name -s boardid:/nvram/boardid:rw -s nvuser:/nvram/nvuser:rw -s perm:/nvram/perm:rw -s prdid:/nvram/prdid:rw -s blog:/nvram/blog:rw
+   class core
+   group nvram drmrpc
