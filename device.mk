@@ -110,9 +110,8 @@ PRODUCT_PACKAGES += \
     fs_config_files
 
 # Gatekeeper HAL
-#PRODUCT_PACKAGES += \
-#    android.hardware.gatekeeper@1.0-impl \
-#    android.hardware.gatekeeper@1.0-service
+PRODUCT_PACKAGES += \
+    android.hardware.gatekeeper@1.0-service.software
 
 # GPS
 PRODUCT_PACKAGES += \
@@ -179,7 +178,6 @@ PRODUCT_PACKAGES += \
 
 # LiveDisplay
 PRODUCT_PACKAGES += \
-    vendor.lineage.livedisplay@2.0-service-legacymm \
     vendor.lineage.livedisplay@2.0-service-sysfs
 
 # Media
@@ -284,13 +282,9 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     android.hardware.renderscript@1.0-impl
 
-# RRO
-PRODUCT_ENFORCE_RRO_TARGETS := \
-    framework-res
-
 # Seccomp
 PRODUCT_COPY_FILES += \
-    $(LOCAL_PATH)/seccomp/mediacodec-seccomp.policy:$(TARGET_COPY_OUT_VENDOR)/etc/seccomp_policy/mediacodec.policy
+    $(LOCAL_PATH)/seccomp/mediacodec.policy:$(TARGET_COPY_OUT_VENDOR)/etc/seccomp_policy/mediacodec.policy
 
 # Sensors
 PRODUCT_PACKAGES += \
@@ -353,3 +347,7 @@ $(call inherit-product-if-exists, hardware/broadcom/wlan/bcmdhd/firmware/bcm4356
 
 # Call the proprietary setup
 $(call inherit-product, vendor/blackberry/venice/venice-vendor.mk)
+
+$(call inherit-product-if-exists, vendor/partner/gms/products/gms.mk)
+
+$(call inherit-product-if-exists, vendor/gapps/arm/arm-vendor.mk)

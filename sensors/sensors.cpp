@@ -15,7 +15,7 @@ struct sensor_t sensor_list[20];
 int wrapper_get_sensors_list(struct sensors_module_t* module, struct sensor_t const** list)
 {
 	const struct sensor_t *lib_list;
-	int lib_count = lib_sensors_module->get_sensors_list(module, &lib_list);
+	int lib_count = lib_sensors_module->get_sensors_list(lib_sensors_module, &lib_list);
 	if (lib_count < 0)
 		return lib_count;
 	

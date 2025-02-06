@@ -103,10 +103,6 @@ TARGET_ADDITIONAL_GRALLOC_10_USAGE_BITS := 0x02000000
 # HIDL
 DEVICE_MANIFEST_FILE := $(DEVICE_PATH)/manifest.xml
 
-# Init
-TARGET_INIT_VENDOR_LIB := libinit_venice
-TARGET_RECOVERY_DEVICE_MODULES := libinit_venice
-
 # IPA
 USE_DEVICE_SPECIFIC_DATA_IPA_CFG_MGR := true
 
@@ -120,16 +116,14 @@ BOARD_RAMDISK_USE_XZ := true
 TARGET_KERNEL_SOURCE := kernel/blackberry/msm8992
 TARGET_KERNEL_CONFIG := lineageos_venice_defconfig
 TARGET_KERNEL_ARCH := arm64
-BOARD_KERNEL_CMDLINE := androidboot.hardware=qcom user_debug=31 msm_rtb.filter=0x37 ehci-hcd.park=3 lpm_levels.sleep_disabled=1 boot_cpus=0-5 loop.max_part=7 androidboot.selinux=permissive
-BOARD_KERNEL_IMAGE_NAME := Image.gz-dtb
+BOARD_KERNEL_CMDLINE := androidboot.hardware=qcom user_debug=31 msm_rtb.filter=0x37 ehci-hcd.park=3 boot_cpus=0-5 loop.max_part=7 androidboot.selinux=permissive
+BOARD_KERNEL_IMAGE_NAME := Image
+BOARD_KERNEL_SEPARATED_DT := true
 BOARD_CUSTOM_MKBOOTIMG := $(DEVICE_PATH)/bootimg/mkbootimg.py
 BOARD_MKBOOTIMG_ARGS := --binfo $(DEVICE_PATH)/bootimg/binfo.img
 BOARD_RECOVERY_MKBOOTIMG_ARGS := $(BOARD_MKBOOTIMG_ARGS) --recovery
 
 TARGET_USES_64_BIT_BINDER := true
-
-# Keymaster
-TARGET_PROVIDES_KEYMASTER := true
 
 # Legacy memfd
 TARGET_HAS_MEMFD_BACKPORT := true

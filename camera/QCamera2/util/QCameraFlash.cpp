@@ -133,7 +133,7 @@ int32_t QCameraFlash::registerCallbacks(
 int32_t QCameraFlash::initFlash(const int camera_id)
 {
     int32_t retVal = 0;
-    char flashPath[QCAMERA_MAX_FILEPATH_LENGTH] = "/sys/class/leds/led:torch_1/brightness";
+    char flashPath[QCAMERA_MAX_FILEPATH_LENGTH] = "/sys/class/leds/led:torch_0/brightness";
 
     if (camera_id < 0 || camera_id >= MM_CAMERA_MAX_NUM_SENSORS) {
         ALOGE("%s: Invalid camera id: %d", __func__, camera_id);
@@ -158,9 +158,10 @@ int32_t QCameraFlash::initFlash(const int camera_id)
         m_flashFds[camera_id] = open(flashPath, O_RDWR | O_NONBLOCK);
 
         if (m_flashFds[camera_id] < 0) {
-            ALOGE("%s: Unable to open node '%s'",
+            ALOGE("%s: Unable to open node '%s': %d",
                     __func__,
-                    flashPath);
+                    flashPath,
+					m_flashFds[camera_id]);
             retVal = -EBUSY;
         }
 

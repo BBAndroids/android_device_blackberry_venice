@@ -64,8 +64,6 @@ on boot
     mkdir /dev/socket/qmux_audio 2770 media audio
     mkdir /dev/socket/qmux_bluetooth 2770 bluetooth bluetooth
     mkdir /dev/socket/qmux_gps 2770 gps gps
-    
-    exec chown -R radio:radio /persist/cellular
 
     # Create NETMGR daemon socket area
     mkdir /dev/socket/netmgr 0750 radio radio
@@ -110,7 +108,6 @@ on boot
     setprop persist.audio.calfile5 /vendor/etc/acdbdata/venice/Venice_Headset_cal.acdb
     setprop persist.audio.calfile6 /vendor/etc/acdbdata/venice/Venice_Speaker_cal.acdb
 
-# msm specific files that need to be created on /data
 on post-fs-data
     # Boot time fs tune
     write /sys/block/mmcblk0/queue/read_ahead_kb 2048
@@ -163,19 +160,16 @@ service perfd /system/vendor/bin/perfd
     group system
     disabled
     socket perfd seqpacket 0666 root system
-    writepid /dev/cpuset/system-background/tasks
 
 service cnd /vendor/bin/cnd
     class main
     user system
     group system wifi inet radio wakelock net_admin
-    writepid /dev/cpuset/system-background/tasks
 
 service dpmQmiMgr /vendor/bin/dpmQmiMgr
     class main
     user system
     group radio system
-    writepid /dev/cpuset/system-background/tasks
 
 service irsc_util /vendor/bin/irsc_util "/vendor/etc/sec_config"
     class main
@@ -187,51 +181,32 @@ service rmt_storage /vendor/bin/rmt_storage
     user root
     group system wakelock
     shutdown critical
-    writepid /dev/cpuset/system-background/tasks
 
 service rfs_access /vendor/bin/rfs_access
     class core
     user root
     group system net_raw
-    writepid /dev/cpuset/system-background/tasks
-
-on property:vendor.wc_transport.start_hci=true
-    start start_hci_filter
-
-on property:vendor.wc_transport.start_hci=false
-    stop start_hci_filter
-
-service start_hci_filter /vendor/bin/wcnss_filter
-    class late_start
-    user bluetooth
-    group bluetooth oem_2950 system wakelock
-    disabled
-    writepid /dev/cpuset/system-background/tasks
 
 # QMUX must be in multiple groups to support external process connections
 service qmuxd /vendor/bin/qmuxd
     class main
     user root
     group radio audio bluetooth gps nfc diag
-    writepid /dev/cpuset/system-background/tasks
 
 service netmgrd /vendor/bin/netmgrd
     class main
     user root
     group root wifi wakelock radio inet
-    writepid /dev/cpuset/system-background/tasks
 
 service ipacm /vendor/bin/ipacm
     class main
     user radio
     group radio inet
-    writepid /dev/cpuset/system-background/tasks
 
 service qti /system/vendor/bin/qti
     class main
     user radio
     group radio net_raw diag usb net_admin
-    writepid /dev/cpuset/system-background/tasks
 
 # Adjust socket buffer to enlarge TCP receive window for high bandwidth
 # but only if ro.data.large_tcp_window_size property is set.
@@ -245,7 +220,6 @@ service cnss-daemon /vendor/bin/cnss-daemon -n -l
     class late_start
     user system
     group system inet net_admin wifi
-    writepid /dev/cpuset/system-background/tasks
 
 service qcom-sh /vendor/bin/init.qcom.sh
     class late_start

@@ -23,4 +23,7 @@ PRODUCT_MODEL := Priv
 PRODUCT_MANUFACTURER := BlackBerry
 PRODUCT_NAME := lineage_venice
 
+PRODUCT_BUILD_PROP_OVERRIDES += \
+    PRODUCT_NAME=venice
+
 BUILD_FINGERPRINT := blackberry/veniceatt/venice:6.0.1/MMB29M/AAW068:user/release-keys

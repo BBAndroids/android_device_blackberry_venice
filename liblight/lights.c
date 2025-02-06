@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-#define LOG_TAG "venice_lights"
+#define LOG_TAG "lights"
 #define LOG_NDEBUG 0
 #include <log/log.h>
 
@@ -32,45 +32,61 @@
 
 #include <hardware/lights.h>
 
+#ifndef min
+#define min(a,b) ((a)<(b)?(a):(b))
+#endif
+#ifndef max
+#define max(a,b) ((a)<(b)?(b):(a))
+#endif
+
+#define	PWM_LUT_MAX_SIZE		63
+#define PM_PWM_LUT_LOOP			0x01
+#define PM_PWM_LUT_RAMP_UP		0x02
+#define PM_PWM_LUT_REVERSE		0x04
+#define PM_PWM_LUT_PAUSE_HI_EN		0x08
+#define PM_PWM_LUT_PAUSE_LO_EN		0x10
+#define PM_PWM_LUT_NO_TABLE		0x20
+#define PM_PWM_LUT_USE_RAW_VALUE	0x40
+
 #define LCD_FILE "/sys/class/leds/lcd-backlight/brightness"
 
-#define RED_LED_FILE "/sys/class/leds/led:rgb_red/brightness"
+#define RED_BRIGHTNESS_FILE "/sys/class/leds/led:rgb_red/brightness"
 #define RED_DUTY_PCTS_FILE "/sys/class/leds/led:rgb_red/duty_pcts"
 #define RED_START_IDX_FILE "/sys/class/leds/led:rgb_red/start_idx"
 #define RED_PAUSE_LO_FILE "/sys/class/leds/led:rgb_red/pause_lo"
 #define RED_PAUSE_HI_FILE "/sys/class/leds/led:rgb_red/pause_hi"
 #define RED_RAMP_STEP_MS_FILE "/sys/class/leds/led:rgb_red/ramp_step_ms"
+#define RED_LUT_FLAGS_FILE "/sys/class/leds/led:rgb_red/lut_flags"
 #define RED_BLINK_FILE "/sys/class/leds/led:rgb_red/blink"
 
-#define GREEN_LED_FILE "/sys/class/leds/led:rgb_green/brightness"
+#define GREEN_BRIGHTNESS_FILE "/sys/class/leds/led:rgb_green/brightness"
 #define GREEN_DUTY_PCTS_FILE "/sys/class/leds/led:rgb_green/duty_pcts"
 #define GREEN_START_IDX_FILE "/sys/class/leds/led:rgb_green/start_idx"
 #define GREEN_PAUSE_LO_FILE "/sys/class/leds/led:rgb_green/pause_lo"
 #define GREEN_PAUSE_HI_FILE "/sys/class/leds/led:rgb_green/pause_hi"
 #define GREEN_RAMP_STEP_MS_FILE "/sys/class/leds/led:rgb_green/ramp_step_ms"
+#define GREEN_LUT_FLAGS_FILE "/sys/class/leds/led:rgb_green/lut_flags"
 #define GREEN_BLINK_FILE "/sys/class/leds/led:rgb_green/blink"
 
-#define BLUE_LED_FILE "/sys/class/leds/led:rgb_blue/brightness"
+#define BLUE_BRIGHTNESS_FILE "/sys/class/leds/led:rgb_blue/brightness"
 #define BLUE_DUTY_PCTS_FILE "/sys/class/leds/led:rgb_blue/duty_pcts"
 #define BLUE_START_IDX_FILE "/sys/class/leds/led:rgb_blue/start_idx"
 #define BLUE_PAUSE_LO_FILE "/sys/class/leds/led:rgb_blue/pause_lo"
 #define BLUE_PAUSE_HI_FILE "/sys/class/leds/led:rgb_blue/pause_hi"
 #define BLUE_RAMP_STEP_MS_FILE "/sys/class/leds/led:rgb_blue/ramp_step_ms"
+#define BLUE_LUT_FLAGS_FILE "/sys/class/leds/led:rgb_blue/lut_flags"
 #define BLUE_BLINK_FILE "/sys/class/leds/led:rgb_blue/blink"
 
-#define KEYBOARD_INFO_FILE "/sys/devices/soc.0/f9923000.i2c/i2c-1/1-0020/input/input1/info"
 #define KEYBOARD_FILE "/sys/class/leds/kpd-backlight/brightness"
 
-#define RAMP_SIZE 8
-#define RAMP_STEP_DURATION 50
-
-static const int BRIGHTNESS_RAMP[RAMP_SIZE]
-        = { 0, 12, 25, 37, 50, 72, 85, 100 };
+#define LED_DUTY_STEPS       50
+#define LED_RAMP_MS          500
 
 static pthread_mutex_t g_lock = PTHREAD_MUTEX_INITIALIZER;
 static struct light_state_t g_battery;
 static struct light_state_t g_notification;
 static struct light_state_t g_attention;
+static int g_keyboard_brightness;
 
 static int write_int(const char *path, int value)
 {
@@ -115,33 +131,12 @@ static int rgb_to_brightness(const struct light_state_t *state)
     return state->color & 0x000000ff;
 }
 
-static char *get_scaled_duty_pcts(int brightness)
-{
-    char *buf = calloc(RAMP_SIZE, 5 * sizeof(char));
-    char *pad = "";
-    int i = 0;
-
-    if (!buf)
-        return NULL;
-
-    for (i = 0; i < RAMP_SIZE; i++) {
-        char temp[5];
-        snprintf(temp, sizeof(temp), "%s%d", pad, (BRIGHTNESS_RAMP[i] * brightness / 255));
-        strcat(buf, temp);
-        pad = ",";
-    }
-    ALOGV("%s: brightness=%d duty=%s", __func__, brightness, buf);
-
-    return buf;
-}
-
 static int set_speaker_light_locked(struct light_device_t *dev,
         const struct light_state_t *state)
 {
-    int red, green, blue, blink;
-    int onMS, offMS, stepDuration, pauseHi;
+    int onMS, offMS;
     unsigned int colorRGB;
-    char *duty;
+    int red, green, blue, brightness;
 
     if(!dev) {
         return -1;
@@ -164,68 +159,90 @@ static int set_speaker_light_locked(struct light_device_t *dev,
     ALOGV("set_speaker_light_locked mode %d, colorRGB=%08X, onMS=%d, offMS=%d\n",
             state->flashMode, colorRGB, onMS, offMS);
 
+    brightness = colorRGB >> 24;
     red = (colorRGB >> 16) & 0xFF;
     green = (colorRGB >> 8) & 0xFF;
     blue = colorRGB & 0xFF;
-    blink = onMS > 0 && offMS > 0;
-
-    // disable all blinking to start
-    write_int(RED_BLINK_FILE, 0);
-    write_int(GREEN_BLINK_FILE, 0);
-    write_int(BLUE_BLINK_FILE, 0);
-
-    if (blink) {
-        stepDuration = RAMP_STEP_DURATION;
-        pauseHi = onMS - (stepDuration * RAMP_SIZE * 2);
-        if (stepDuration * RAMP_SIZE * 2 > onMS) {
-            stepDuration = onMS / (RAMP_SIZE * 2);
-            pauseHi = 0;
-        }
-
-        // red
-        write_int(RED_START_IDX_FILE, 0);
-        duty = get_scaled_duty_pcts(red);    
-        write_str(RED_DUTY_PCTS_FILE, duty);
-        write_int(RED_PAUSE_LO_FILE, offMS);
-        // The led driver is configured to ramp up then ramp
-        // down the lut. This effectively doubles the ramp duration.
-        write_int(RED_PAUSE_HI_FILE, pauseHi);
-        write_int(RED_RAMP_STEP_MS_FILE, stepDuration);
-        free(duty);
-
-        // green
-        write_int(GREEN_START_IDX_FILE, RAMP_SIZE);
-        duty = get_scaled_duty_pcts(green);
-        write_str(GREEN_DUTY_PCTS_FILE, duty);
-        write_int(GREEN_PAUSE_LO_FILE, offMS);
-        // The led driver is configured to ramp up then ramp
-        // down the lut. This effectively doubles the ramp duration.
-        write_int(GREEN_PAUSE_HI_FILE, pauseHi);
-        write_int(GREEN_RAMP_STEP_MS_FILE, stepDuration);
-        free(duty);
-
-        // blue
-        write_int(BLUE_START_IDX_FILE, RAMP_SIZE * 2);
-        duty = get_scaled_duty_pcts(blue);
-        write_str(BLUE_DUTY_PCTS_FILE, duty);
-        write_int(BLUE_PAUSE_LO_FILE, offMS);
-        // The led driver is configured to ramp up then ramp
-        // down the lut. This effectively doubles the ramp duration.
-        write_int(BLUE_PAUSE_HI_FILE, pauseHi);
-        write_int(BLUE_RAMP_STEP_MS_FILE, stepDuration);
-        free(duty);
-
-        // start the party
-        write_int(RED_BLINK_FILE, 1);
-        write_int(GREEN_BLINK_FILE, 1);
-        write_int(BLUE_BLINK_FILE, 1);
-
-    } else {
-        write_int(RED_LED_FILE, red);
-        write_int(GREEN_LED_FILE, green);
-        write_int(BLUE_LED_FILE, blue);
+    
+    if (brightness)
+    {
+    	red = red * brightness / 0xFF;
+    	green = green * brightness / 0xFF;
+    	blue = blue * brightness / 0xFF;
     }
 
+    if (onMS > 0 && offMS > 0) {
+        char dutystr[PWM_LUT_MAX_SIZE * 4 + 1];
+        char* p;
+        int i;
+
+        if (red) {
+            p = dutystr + sprintf(dutystr, "0");
+            for (i = 1; i < LED_DUTY_STEPS; ++i) {
+                p += sprintf(p, ",%d", (min((100 * i * LED_RAMP_MS / LED_DUTY_STEPS) / LED_RAMP_MS, 100)) * red / 0xFF);
+            }
+            p += sprintf(p, "\n");
+
+            write_int(RED_BRIGHTNESS_FILE, 0xFF);
+            write_int(RED_RAMP_STEP_MS_FILE, LED_RAMP_MS / LED_DUTY_STEPS);
+            write_str(RED_START_IDX_FILE, 0);
+            write_str(RED_DUTY_PCTS_FILE, dutystr);
+            write_int(RED_PAUSE_LO_FILE, (offMS > 2 * LED_RAMP_MS) ? (offMS - 2 * LED_RAMP_MS) : 0);
+            write_int(RED_PAUSE_HI_FILE, onMS);
+            write_int(RED_LUT_FLAGS_FILE, PM_PWM_LUT_LOOP | PM_PWM_LUT_RAMP_UP | PM_PWM_LUT_REVERSE | PM_PWM_LUT_PAUSE_HI_EN | PM_PWM_LUT_PAUSE_LO_EN);
+            write_int(RED_BLINK_FILE, 1);
+        } else {
+            write_int(RED_BRIGHTNESS_FILE, 0);
+            write_int(RED_BLINK_FILE, 0);
+        }
+
+        if (green) {
+            p = dutystr + sprintf(dutystr, "0");
+            for (i = 1; i < LED_DUTY_STEPS; ++i) {
+                p += sprintf(p, ",%d", (min((100 * i * LED_RAMP_MS / LED_DUTY_STEPS) / LED_RAMP_MS, 100)) * green / 0xFF);
+            }
+            p += sprintf(p, "\n");
+
+            write_int(GREEN_BRIGHTNESS_FILE, 0xFF);
+            write_int(GREEN_RAMP_STEP_MS_FILE, LED_RAMP_MS / LED_DUTY_STEPS);
+            write_str(GREEN_START_IDX_FILE, 0);
+            write_str(GREEN_DUTY_PCTS_FILE, dutystr);
+            write_int(GREEN_PAUSE_LO_FILE, (offMS > 2 * LED_RAMP_MS) ? (offMS - 2 * LED_RAMP_MS) : 0);
+            write_int(GREEN_PAUSE_HI_FILE, onMS);
+            write_int(GREEN_LUT_FLAGS_FILE, PM_PWM_LUT_LOOP | PM_PWM_LUT_RAMP_UP | PM_PWM_LUT_REVERSE | PM_PWM_LUT_PAUSE_HI_EN | PM_PWM_LUT_PAUSE_LO_EN);
+            write_int(GREEN_BLINK_FILE, 1);
+        } else {
+            write_int(GREEN_BRIGHTNESS_FILE, 0);
+            write_int(GREEN_BLINK_FILE, 0);
+        }
+
+        if (blue) {
+            p = dutystr + sprintf(dutystr, "0");
+            for (i = 1; i < LED_DUTY_STEPS; ++i) {
+                p += sprintf(p, ",%d", (min((100 * i * LED_RAMP_MS / LED_DUTY_STEPS) / LED_RAMP_MS, 100)) * blue / 0xFF);
+            }
+            p += sprintf(p, "\n");
+
+            write_int(BLUE_BRIGHTNESS_FILE, 0xFF);
+            write_int(BLUE_RAMP_STEP_MS_FILE, LED_RAMP_MS / LED_DUTY_STEPS);
+            write_str(BLUE_START_IDX_FILE, 0);
+            write_str(BLUE_DUTY_PCTS_FILE, dutystr);
+            write_int(BLUE_PAUSE_LO_FILE, (offMS > 2 * LED_RAMP_MS) ? (offMS - 2 * LED_RAMP_MS) : 0);
+            write_int(BLUE_PAUSE_HI_FILE, onMS);
+            write_int(BLUE_LUT_FLAGS_FILE, PM_PWM_LUT_LOOP | PM_PWM_LUT_RAMP_UP | PM_PWM_LUT_REVERSE | PM_PWM_LUT_PAUSE_HI_EN | PM_PWM_LUT_PAUSE_LO_EN);
+            write_int(BLUE_BLINK_FILE, 1);
+        } else {
+            write_int(BLUE_BRIGHTNESS_FILE, 0);
+            write_int(BLUE_BLINK_FILE, 0);
+        }
+    } else {
+        write_int(RED_BLINK_FILE, 0);
+        write_int(GREEN_BLINK_FILE, 0);
+        write_int(BLUE_BLINK_FILE, 0);
+        write_int(RED_BRIGHTNESS_FILE, red);
+        write_int(GREEN_BRIGHTNESS_FILE, green);
+        write_int(BLUE_BRIGHTNESS_FILE, blue);
+    }
 
     return 0;
 }
@@ -253,21 +270,8 @@ static int set_light_backlight(struct light_device_t *dev,
     pthread_mutex_lock(&g_lock);
 
     err = write_int(LCD_FILE, brightness);
-    
-    int fd = open(KEYBOARD_INFO_FILE, O_RDONLY);
-    if (fd >= 0)
-    {
-        char buffer[1024];
-        memset(buffer, 0, sizeof(buffer));
-        read(fd, buffer, sizeof(buffer));
-
-        bool is_closed = strstr(buffer, "slider_state=0") != NULL;
-        err = write_int(KEYBOARD_FILE, is_closed ? 0 : brightness);
-
-        close(fd);
-    }
-    else
-        ALOGE("set_light_backlight failed to open info %d\n", fd);
+	
+	write_int(KEYBOARD_FILE, brightness == 0 ? 0 : g_keyboard_brightness);
 
     pthread_mutex_unlock(&g_lock);
 
@@ -278,14 +282,14 @@ static int set_light_keyboard(struct light_device_t *dev,
         const struct light_state_t *state)
 {
     int err = 0;
-    int brightness = rgb_to_brightness(state);
+    g_keyboard_brightness = rgb_to_brightness(state);
 
     if (!dev)
         return -ENODEV;
 
     pthread_mutex_lock(&g_lock);
 
-    err = write_int(KEYBOARD_FILE, brightness);
+    err = write_int(KEYBOARD_FILE, g_keyboard_brightness);
 
     pthread_mutex_unlock(&g_lock);
 

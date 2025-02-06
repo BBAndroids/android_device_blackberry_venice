@@ -3040,7 +3040,9 @@ int radio::getIccCardStatusResponse(int slotId,
         populateResponseInfo(responseInfo, serial, responseType, e);
         CardStatus cardStatus = {CardState::ABSENT, PinState::UNKNOWN, -1, -1, -1, {}};
         RIL_CardStatus_BB *p_cur = ((RIL_CardStatus_BB *) response);
-        if (response == NULL || responseLen != sizeof(RIL_CardStatus_BB)
+        if (e == RIL_E_SUCCESS && responseLen == 0) {
+            RLOGE("getIccCardStatusResponse: Zero response");
+        } else if (response == NULL || responseLen != sizeof(RIL_CardStatus_BB)
                 || p_cur->gsm_umts_subscription_app_index >= p_cur->num_applications
                 || p_cur->cdma_subscription_app_index >= p_cur->num_applications
                 || p_cur->ims_subscription_app_index >= p_cur->num_applications) {
@@ -3905,7 +3907,7 @@ int radio::getVoiceRegistrationStateResponse(int slotId,
                 if (e == RIL_E_SUCCESS) responseInfo.error = RadioError::INVALID_RESPONSE;
             } else {
                 voiceRegResponse.regState = (RegState) voiceRegState->regState;
-                voiceRegResponse.rat = voiceRegState->rat;;
+                voiceRegResponse.rat = voiceRegState->rat;
                 voiceRegResponse.cssSupported = voiceRegState->cssSupported;
                 voiceRegResponse.roamingIndicator = voiceRegState->roamingIndicator;
                 voiceRegResponse.systemIsInPrl = voiceRegState->systemIsInPrl;

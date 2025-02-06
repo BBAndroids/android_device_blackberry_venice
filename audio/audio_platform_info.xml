@@ -26,73 +26,14 @@
 <!-- IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.                          -->
 <audio_platform_info>
     <acdb_ids>
+        <!-- start:BBRY_ANDROID: Remove entries to prevent remapping ACDB IDs. -->
+        <!--
+        <device name="SND_DEVICE_OUT_SPEAKER_PROTECTED" acdb_id="124"/>
+        -->
+        <!-- end:BBRY_ANDROID -->
     </acdb_ids>
-
     <bit_width_configs>
-        <device name="SND_DEVICE_OUT_SPEAKER" bit_width="16" />
+        <device name="SND_DEVICE_OUT_SPEAKER" bit_width="24"/>
     </bit_width_configs>
-
-    <device_names>
-        <!-- output devices -->
-        <device name="SND_DEVICE_OUT_HANDSET" alias="handset" />
-        <device name="SND_DEVICE_OUT_SPEAKER" alias="speaker" />
-        <device name="SND_DEVICE_OUT_HEADPHONES" alias="headphones" />
-        <device name="SND_DEVICE_OUT_SPEAKER_AND_HEADPHONES" alias="speaker-and-headphones" />
-        <device name="SND_DEVICE_OUT_VOICE_HANDSET" alias="voice-handset" />
-        <device name="SND_DEVICE_OUT_VOICE_SPEAKER" alias="voice-speaker" />
-        <device name="SND_DEVICE_OUT_VOICE_HEADPHONES" alias="voice-headphones" />
-
-        <!-- input devices -->
-        <!-- used for input handset -->
-        <device name="SND_DEVICE_IN_HANDSET_MIC" alias="handset-mic" />
-        <device name="SND_DEVICE_IN_HANDSET_DMIC" alias="handset-mic" />
-        <device name="SND_DEVICE_IN_HANDSET_STEREO_DMIC" alias="handset-mic" />
-
-        <!-- used for voip handset -->
-        <device name="SND_DEVICE_IN_HANDSET_MIC_AEC" alias="anc-handset" />
-        <device name="SND_DEVICE_IN_HANDSET_MIC_NS" alias="anc-handset" />
-        <device name="SND_DEVICE_IN_HANDSET_MIC_AEC_NS" alias="anc-handset" />
-        <device name="SND_DEVICE_IN_HANDSET_DMIC_AEC" alias="anc-handset" />
-        <device name="SND_DEVICE_IN_HANDSET_DMIC_NS" alias="anc-handset" />
-        <device name="SND_DEVICE_IN_HANDSET_DMIC_AEC_NS" alias="anc-handset" />
-
-        <!-- used for input speaker -->
-        <device name="SND_DEVICE_IN_SPEAKER_MIC" alias="speaker-mic" />
-        <device name="SND_DEVICE_IN_SPEAKER_DMIC" alias="speaker-mic" />
-        <device name="SND_DEVICE_IN_SPEAKER_STEREO_DMIC" alias="speaker-mic" />
-
-        <!-- used for voip speaker -->
-        <device name="SND_DEVICE_IN_SPEAKER_MIC_AEC" alias="speaker-mic" />
-        <device name="SND_DEVICE_IN_SPEAKER_MIC_NS" alias="speaker-mic" />
-        <device name="SND_DEVICE_IN_SPEAKER_MIC_AEC_NS" alias="speaker-mic" />
-        <device name="SND_DEVICE_IN_SPEAKER_DMIC_AEC" alias="speaker-mic" />
-        <device name="SND_DEVICE_IN_SPEAKER_DMIC_NS" alias="speaker-mic" />
-        <device name="SND_DEVICE_IN_SPEAKER_DMIC_AEC_NS" alias="speaker-mic" />
-
-        <!-- used for input headset -->
-        <device name="SND_DEVICE_IN_HEADSET_MIC" alias="headset-mic" />
-
-        <!-- used for voip headset -->
-        <device name="SND_DEVICE_IN_HEADSET_MIC_FLUENCE" alias="headset-mic" />
-
-        <!-- used for call headset -->
-        <device name="SND_DEVICE_IN_VOICE_HEADSET_MIC" alias="headset-mic" />
-
-        <!-- used for camcorder -->
-        <device name="SND_DEVICE_IN_CAMCORDER_MIC" alias="camcorder-mic" />
-        <device name="SND_DEVICE_IN_CAMCORDER_STEREO_DMIC" alias="camcorder-mic" />
-
-        <!-- used for call handset -->
-        <device name="SND_DEVICE_IN_VOICE_DMIC" alias="speaker-mic" />
-
-        <!-- used for call speaker -->
-        <device name="SND_DEVICE_IN_VOICE_SPEAKER_MIC" alias="speaker-mic" />
-        <device name="SND_DEVICE_IN_VOICE_SPEAKER_DMIC" alias="speaker-mic" />
-
-        <!-- Used for voice recognition -->
-        <device name="SND_DEVICE_IN_VOICE_REC_MIC" alias="speaker-mic" />
-        <device name="SND_DEVICE_IN_VOICE_REC_MIC_NS" alias="speaker-mic" />
-        <device name="SND_DEVICE_IN_VOICE_REC_DMIC_STEREO" alias="speaker-mic" />
-        <device name="SND_DEVICE_IN_VOICE_REC_DMIC_FLUENCE" alias="speaker-mic" />
-    </device_names>
 </audio_platform_info>
+

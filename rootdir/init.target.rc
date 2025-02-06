@@ -60,26 +60,22 @@ service qcamerasvr /vendor/bin/mm-qcamera-daemon
     class late_start
     user camera
     group camera system inet input graphics gps
-    writepid /dev/cpuset/camera-daemon/tasks
 
 service vendor.qseecomd /vendor/bin/qseecomd
     class core
     user root
     group root
-    writepid /dev/cpuset/foreground/tasks
 
 service per_mgr /vendor/bin/pm-service
     class core
     user system
     group system
-    writepid /dev/cpuset/system-background/tasks
 
 service per_proxy /vendor/bin/pm-proxy
     class core
     user system
     group system net_raw
     disabled
-    writepid /dev/cpuset/system-background/tasks
 
 on property:init.svc.per_mgr=running
     start per_proxy
@@ -87,33 +83,30 @@ on property:init.svc.per_mgr=running
 on property:sys.shutdown.requested=*
     stop per_proxy
 
-service thermal-engine /system/vendor/bin/thermal-engine
+service thermal-engine /vendor/bin/thermal-engine
     class main
     user root
     socket thermal-send-client stream 0666 system system
     socket thermal-recv-client stream 0660 system system
     socket thermal-recv-passive-client stream 0666 system system
     group root
-    writepid /dev/cpuset/system-background/tasks
 
 service msm_irqbalance /vendor/bin/msm_irqbalance -f /vendor/etc/msm_irqbalance.conf
     socket msm_irqbalance seqpacket 660 root system
     class core
     user root
     group root
-    writepid /dev/cpuset/system-background/tasks
 
 service adsprpcd /vendor/bin/adsprpcd
     class main
     user media
     group media
-    writepid /dev/cpuset/system-background/tasks
 
-service ppd /vendor/bin/mm-pp-daemon
-    class hal
-    user system
-    socket pps stream 0660 system system
-    group system graphics
+#service ppd /vendor/bin/mm-pp-daemon
+#    class hal
+#    user system
+#    socket pps stream 0660 system system
+#    group system graphics
 
 service energy-awareness /vendor/bin/energy-awareness
     class main
